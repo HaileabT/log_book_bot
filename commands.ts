@@ -1,5 +1,5 @@
 import { BotContext } from "./type";
-import { getRecentLogs, getUserStats, processLog } from "./db/operations";
+import { getRecentAllLogs, getRecentLogs, getUserStats, processLog } from "./db/operations";
 
 async function onLog(ctx: BotContext) {
     const text = ctx.match as string;
@@ -43,12 +43,20 @@ async function onRecent(ctx: BotContext) {
 
     let recentAmount = 5;
     const match = ctx.match as string;
-    if (match && match.trim() !== "" && !isNaN(Number(match.trim()))) {
+    let logs: { id: number, message: string, createdAt: Date }[] = [];
+    if (match && match.trim() !== "" && match.toLowerCase().startsWith("all")) {
+        const amount = match.split(" ")[1];
+        if (amount && amount.trim() !== "" && !isNaN(Number(amount.trim()))) {
+            recentAmount = parseInt(amount);
+        }
+        logs = await getRecentAllLogs(tgGroupId, recentAmount);
+    }
+    else if (match && match.trim() !== "" && !isNaN(Number(match.trim()))) {
         recentAmount = parseInt(match.trim(), 10);
+        logs = await getRecentLogs(tgUserId, tgGroupId, recentAmount);
     }
 
 
-    const logs = await getRecentLogs(tgUserId, tgGroupId, recentAmount);
 
     if (logs.length === 0) {
         await ctx.reply("> *You haven't logged any activity in this group yet.*", { parse_mode: "Markdown" });

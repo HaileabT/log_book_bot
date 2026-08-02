@@ -129,13 +129,32 @@ export async function getRecentLogs(tgUserId: string, tgGroupId: string, limitCo
         message: logsTable.message,
         createdAt: logsTable.createdAt
     })
-    .from(logsTable)
-    .where(and(
-        eq(logsTable.userId, user.id),
-        eq(logsTable.groupId, group.id)
-    ))
-    .orderBy(desc(logsTable.createdAt))
-    .limit(limitCount);
+        .from(logsTable)
+        .where(and(
+            eq(logsTable.userId, user.id),
+            eq(logsTable.groupId, group.id)
+        ))
+        .orderBy(desc(logsTable.createdAt))
+        .limit(limitCount);
+
+    return recentLogs;
+}
+
+export async function getRecentAllLogs(tgGroupId: string, limitCount: number = 5) {
+    const group = await db.select().from(groupsTable).where(eq(groupsTable.tg_id, tgGroupId)).execute().then(res => res[0]);
+    if (!group) return [];
+
+    const recentLogs = await db.select({
+        id: logsTable.id,
+        message: logsTable.message,
+        createdAt: logsTable.createdAt
+    })
+        .from(logsTable)
+        .where(and(
+            eq(logsTable.groupId, group.id)
+        ))
+        .orderBy(desc(logsTable.createdAt))
+        .limit(limitCount);
 
     return recentLogs;
 }
