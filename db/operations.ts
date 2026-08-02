@@ -8,6 +8,16 @@ export async function getGroup(tg_id: string) {
     return group;
 }
 
+export async function getUserByUsername(username: string) {
+    const [user] = await db.select().from(usersTable).where(eq(usersTable.username, username)).limit(1)
+    return user;
+}
+
+export async function getGroupMember(groupId: number, userId: number) {
+    const [member] = await db.select().from(groupMembersTable).where(and(eq(groupMembersTable.userId, userId), eq(groupMembersTable.groupId, groupId))).limit(1)
+    return member;
+}
+
 export async function processLog(
     tgUserId: string,
     firstName: string,

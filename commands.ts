@@ -1,5 +1,5 @@
 import { BotContext } from "./type";
-import { getGroup, getRecentAllLogs, getRecentLogs, getUserStats, processLog } from "./db/operations";
+import { getGroup, getGroupMember, getRecentAllLogs, getRecentLogs, getUserByUsername, getUserStats, processLog } from "./db/operations";
 
 async function onLog(ctx: BotContext) {
     const text = ctx.match as string;
@@ -40,7 +40,7 @@ function formatDate(date: Date) {
 }
 
 async function onRecent(ctx: BotContext) {
-    const tgUserId = ctx.from?.id.toString();
+    let tgUserId = ctx.from?.id.toString();
     const tgGroupId = ctx.chat?.id.toString();
 
     if (!tgUserId || !tgGroupId) {
@@ -49,13 +49,21 @@ async function onRecent(ctx: BotContext) {
     }
 
     let recentAmount = 5;
+    let username = "";
     let isAll = false;
+    let isUser = false;
     const match = ctx.match as string;
 
     if (match && match.trim() !== "") {
         const parts = match.trim().toLowerCase().split(/\s+/);
         if (parts[0] === "all") {
             isAll = true;
+            if (parts[1] && !isNaN(Number(parts[1]))) {
+                recentAmount = parseInt(parts[1], 10);
+            }
+        } else if (parts[0] && parts[0].startsWith("@")) {
+            isUser = true;
+            username = parts[0].slice(1);
             if (parts[1] && !isNaN(Number(parts[1]))) {
                 recentAmount = parseInt(parts[1], 10);
             }
@@ -84,6 +92,18 @@ async function onRecent(ctx: BotContext) {
 
         await ctx.reply(message, { parse_mode: "Markdown" });
     } else {
+
+        if (isUser) {
+            const group = await getGroup(tgGroupId);
+            const user = await getUserByUsername(username);
+            if (user && group) {
+                const member = await getGroupMember(group.id, user.id);
+                if (member) {
+                    tgUserId = user.tg_id;
+                }
+            }
+        }
+
         const logs = await getRecentLogs(tgUserId, tgGroupId, recentAmount);
 
         if (logs.length === 0) {
