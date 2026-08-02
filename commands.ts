@@ -42,11 +42,9 @@ async function onRecent(ctx: BotContext) {
     }
 
     let recentAmount = 5;
-    const messageTxt = ctx.message?.text;
-    if (messageTxt) {
-        if (!isNaN(Number(messageTxt))) {
-            recentAmount = parseInt(messageTxt);
-        }
+    const match = ctx.match as string;
+    if (match && match.trim() !== "" && !isNaN(Number(match.trim()))) {
+        recentAmount = parseInt(match.trim(), 10);
     }
 
 
@@ -62,11 +60,16 @@ async function onRecent(ctx: BotContext) {
     let message = `**Recent Logs for ${displayName}**\n\n`;
 
     logs.forEach((log, index) => {
-        // Format date simply
-        const dateStr = log.createdAt.toISOString().split('T')[0];
-        const timeStr = log.createdAt.toTimeString().split(' ')[0];
+        const formattedDate = new Intl.DateTimeFormat('en-US', {
+            weekday: 'short',
+            month: 'short',
+            day: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true
+        }).format(log.createdAt);
 
-        message += `*${index + 1}. [${dateStr} ${timeStr}]*\n> ${log.message}\n\n`;
+        message += `*${index + 1}. [${formattedDate}]*\n> ${log.message}\n\n`;
     });
 
     await ctx.reply(message, { parse_mode: "Markdown" });
