@@ -6,6 +6,7 @@ import { BotContext } from "./type";
 
 import { startDailyReportJob } from "./jobs/dailyReport";
 import { commands } from "./commands";
+import { heartbeat } from "./jobs/ping";
 
 const bot = new Bot<BotContext>(ENV.botToken || "");
 
@@ -30,11 +31,13 @@ bot.api.setMyCommands([
     { command: "help", description: "Show help information" }
 ]);
 
+heartbeat();
 startDailyReportJob(bot as any);
 bot.start();
 
 const PORT = process.env.PORT || 3000;
 http.createServer((req, res) => {
+
     res.writeHead(200, { "Content-Type": "text/plain" });
     res.end("Bot is running!");
 }).listen(PORT, () => {
