@@ -1,15 +1,15 @@
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, ilike } from "drizzle-orm";
 import { db } from "./index";
 import { usersTable, groupsTable, groupMembersTable, logsTable } from "./schema";
 
 
 export async function getGroup(tg_id: string) {
-    const [group] = await db.select().from(groupsTable).where(eq(groupsTable.tg_id, tg_id)).limit(1);
+    const [group] = await db.select().from(groupsTable).where(ilike(groupsTable.tg_id, tg_id)).limit(1);
     return group;
 }
 
 export async function getUserByUsername(username: string) {
-    const [user] = await db.select().from(usersTable).where(eq(usersTable.username, username)).limit(1)
+    const [user] = await db.select().from(usersTable).where(ilike(usersTable.username, username)).limit(1)
     return user;
 }
 

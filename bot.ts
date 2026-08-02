@@ -14,6 +14,15 @@ bot.use(session({ initial: () => ({}) }));
 bot.command("log", commands.onLog);
 bot.command("stats", commands.onStats);
 bot.command("recent", commands.onRecent);
+bot.command("help", commands.onHelp);
+
+// Set Telegram command menu
+bot.api.setMyCommands([
+    { command: "log", description: "Log an activity" },
+    { command: "recent", description: "View recent logs" },
+    { command: "stats", description: "View your stats and streaks" },
+    { command: "help", description: "Show help information" }
+]);
 
 startDailyReportJob(bot as any);
 bot.start();

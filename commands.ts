@@ -154,5 +154,34 @@ async function onStats(ctx: BotContext) {
 }
 
 
+async function onHelp(ctx: BotContext) {
+    const helpText = `**Welcome to Log Book Bot!** 📝
 
-export const commands = { onLog, onStats, onRecent }
+Here are the commands you can use:
+
+🔸 **/log <message>**
+Log an activity for today. This will automatically track your streak in the current group.
+_Example:_ \`/log Finished reading chapter 3\`
+
+🔸 **/recent [amount]**
+View your recent logs in the current group. (Default is 5)
+_Example:_ \`/recent\` or \`/recent 10\`
+
+🔸 **/recent @username [amount]**
+View recent logs for a specific user in this group.
+_Example:_ \`/recent @johndoe 3\`
+
+🔸 **/recent all [amount]**
+View recent logs from everyone in the group.
+_Example:_ \`/recent all 10\`
+
+🔸 **/stats**
+View your current and longest streaks in this group.
+
+🔸 **/help**
+Show this help message.`;
+
+    await ctx.reply(helpText, { parse_mode: "Markdown" });
+}
+
+export const commands = { onLog, onStats, onRecent, onHelp }
