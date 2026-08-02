@@ -16,6 +16,12 @@ bot.command("stats", commands.onStats);
 bot.command("recent", commands.onRecent);
 bot.command("help", commands.onHelp);
 
+
+bot.inlineQuery("log", commands.onLog);
+bot.inlineQuery("stats", commands.onStats);
+bot.inlineQuery("recent", commands.onRecent);
+bot.inlineQuery("help", commands.onHelp);
+
 // Set Telegram command menu
 bot.api.setMyCommands([
     { command: "log", description: "Log an activity" },
