@@ -41,7 +41,16 @@ async function onRecent(ctx: BotContext) {
         return;
     }
 
-    const logs = await getRecentLogs(tgUserId, tgGroupId, 5);
+    let recentAmount = 5;
+    const messageTxt = ctx.message?.text;
+    if (messageTxt) {
+        if (!isNaN(Number(messageTxt))) {
+            recentAmount = parseInt(messageTxt);
+        }
+    }
+
+
+    const logs = await getRecentLogs(tgUserId, tgGroupId, recentAmount);
 
     if (logs.length === 0) {
         await ctx.reply("> *You haven't logged any activity in this group yet.*", { parse_mode: "Markdown" });
