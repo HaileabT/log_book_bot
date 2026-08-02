@@ -180,31 +180,43 @@ async function onStats(ctx: BotContext) {
 
 
 async function onHelp(ctx: BotContext) {
-    const helpText = `**Welcome to Log Book Bot!** 📝
+    const helpText = `*Welcome to Log Book Bot!* 📝
 
-Here are the commands you can use:
+Here is a list of commands you can use to track and monitor your activities:
 
-🔸 **/log <message>**
-Log an activity for today. This will automatically track your streak in the current group.
-_Example:_ \`/log Finished reading chapter 3\`
+**Logging**
+🔸 **/log [message]**
+Logs an activity for today and updates your streak.
+> Example: \`/log Finished reading chapter 3\`
 
-🔸 **/recent [amount]**
-View your recent logs in the current group. (Default is 5)
-_Example:_ \`/recent\` or \`/recent 10\`
+**Recent Logs**
+🔸 **/recent** _(or /recent [amount])_
+View your recent logs in the current group.
+> Example: \`/recent 10\`
 
-🔸 **/recent @username [amount]**
-View recent logs for a specific user in this group.
-_Example:_ \`/recent @johndoe 3\`
+🔸 **/recent @username** _(or /recent @username [amount])_
+View recent logs for a specific user.
+> Example: \`/recent @johndoe 3\`
 
-🔸 **/recent all [amount]**
+🔸 **/recent all** _(or /recent all [amount])_
 View recent logs from everyone in the group.
-_Example:_ \`/recent all 10\`
+> Example: \`/recent all 10\`
 
+**Statistics & Streaks**
 🔸 **/stats**
 View your current and longest streaks in this group.
 
+🔸 **/stats @username**
+View streaks for a specific user in this group.
+> Example: \`/stats @johndoe\`
+
+🔸 **/stats all**
+View the streaks of everyone in the group.
+> Example: \`/stats all\`
+
+**Other**
 🔸 **/help**
-Show this help message.`;
+Shows this help message.`;
 
     await ctx.reply(helpText, { parse_mode: "Markdown" });
 }
