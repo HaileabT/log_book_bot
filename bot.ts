@@ -1,4 +1,5 @@
 import { Bot, session } from "grammy";
+import http from "http";
 
 import { ENV } from "./env";
 import { BotContext } from "./type";
@@ -16,3 +17,11 @@ bot.command("recent", commands.onRecent);
 
 startDailyReportJob(bot as any);
 bot.start();
+
+const PORT = process.env.PORT || 3000;
+http.createServer((req, res) => {
+    res.writeHead(200, { "Content-Type": "text/plain" });
+    res.end("Bot is running!");
+}).listen(PORT, () => {
+    console.log(`Server listening on port ${PORT}`);
+});
