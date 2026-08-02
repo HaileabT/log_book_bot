@@ -2,6 +2,12 @@ import { eq, and, desc } from "drizzle-orm";
 import { db } from "./index";
 import { usersTable, groupsTable, groupMembersTable, logsTable } from "./schema";
 
+
+export async function getGroup(tg_id: string) {
+    const [group] = await db.select().from(groupsTable).where(eq(groupsTable.tg_id, tg_id)).limit(1);
+    return group;
+}
+
 export async function processLog(
     tgUserId: string,
     firstName: string,
@@ -147,12 +153,13 @@ export async function getRecentAllLogs(tgGroupId: string, limitCount: number = 5
     const recentLogs = await db.select({
         id: logsTable.id,
         message: logsTable.message,
-        createdAt: logsTable.createdAt
+        createdAt: logsTable.createdAt,
+        username: usersTable.username
     })
         .from(logsTable)
         .where(and(
             eq(logsTable.groupId, group.id)
-        ))
+        )).leftJoin(usersTable, eq(logsTable.userId, usersTable.id))
         .orderBy(desc(logsTable.createdAt))
         .limit(limitCount);
 

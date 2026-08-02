@@ -1,5 +1,5 @@
 import { BotContext } from "./type";
-import { getRecentAllLogs, getRecentLogs, getUserStats, processLog } from "./db/operations";
+import { getGroup, getRecentAllLogs, getRecentLogs, getUserStats, processLog } from "./db/operations";
 
 async function onLog(ctx: BotContext) {
     const text = ctx.match as string;
@@ -32,6 +32,13 @@ async function onLog(ctx: BotContext) {
     );
 }
 
+function formatDate(date: Date) {
+    return new Intl.DateTimeFormat('en-US', {
+        weekday: 'short', month: 'short', day: 'numeric',
+        hour: 'numeric', minute: '2-digit', hour12: true
+    }).format(date);
+}
+
 async function onRecent(ctx: BotContext) {
     const tgUserId = ctx.from?.id.toString();
     const tgGroupId = ctx.chat?.id.toString();
@@ -42,45 +49,57 @@ async function onRecent(ctx: BotContext) {
     }
 
     let recentAmount = 5;
+    let isAll = false;
     const match = ctx.match as string;
-    let logs: { id: number, message: string, createdAt: Date }[] = [];
-    if (match && match.trim() !== "" && match.toLowerCase().startsWith("all")) {
-        const amount = match.split(" ")[1];
-        if (amount && amount.trim() !== "" && !isNaN(Number(amount.trim()))) {
-            recentAmount = parseInt(amount);
+
+    if (match && match.trim() !== "") {
+        const parts = match.trim().toLowerCase().split(/\s+/);
+        if (parts[0] === "all") {
+            isAll = true;
+            if (parts[1] && !isNaN(Number(parts[1]))) {
+                recentAmount = parseInt(parts[1], 10);
+            }
+        } else if (!isNaN(Number(parts[0]))) {
+            recentAmount = parseInt(parts[0]!, 10);
         }
-        logs = await getRecentAllLogs(tgGroupId, recentAmount);
-    }
-    else if (match && match.trim() !== "" && !isNaN(Number(match.trim()))) {
-        recentAmount = parseInt(match.trim(), 10);
-        logs = await getRecentLogs(tgUserId, tgGroupId, recentAmount);
     }
 
+    if (isAll) {
+        const logs = await getRecentAllLogs(tgGroupId, recentAmount);
 
+        if (logs.length === 0) {
+            await ctx.reply("> *No logs in this group yet.*", { parse_mode: "Markdown" });
+            return;
+        }
 
-    if (logs.length === 0) {
-        await ctx.reply("> *You haven't logged any activity in this group yet.*", { parse_mode: "Markdown" });
-        return;
+        const group = await getGroup(tgGroupId);
+        const groupTitle = group?.title || "Group";
+
+        let message = `**Recent Logs for ${groupTitle}**\n\n`;
+
+        logs.forEach((log, index) => {
+            const username = log.username || "unknown_user";
+            message += `*${index + 1}. [${formatDate(log.createdAt)}]*\n> ${log.message}\n> _by @${username}_\n\n`;
+        });
+
+        await ctx.reply(message, { parse_mode: "Markdown" });
+    } else {
+        const logs = await getRecentLogs(tgUserId, tgGroupId, recentAmount);
+
+        if (logs.length === 0) {
+            await ctx.reply("> *You haven't logged any activity in this group yet.*", { parse_mode: "Markdown" });
+            return;
+        }
+
+        const displayName = ctx.from?.username ? `@${ctx.from.username}` : ctx.from?.first_name || "User";
+        let message = `**Recent Logs for ${displayName}**\n\n`;
+
+        logs.forEach((log, index) => {
+            message += `*${index + 1}. [${formatDate(log.createdAt)}]*\n> ${log.message}\n\n`;
+        });
+
+        await ctx.reply(message, { parse_mode: "Markdown" });
     }
-
-    const displayName = ctx.from?.username ? `@${ctx.from.username}` : ctx.from?.first_name || "User";
-
-    let message = `**Recent Logs for ${displayName}**\n\n`;
-
-    logs.forEach((log, index) => {
-        const formattedDate = new Intl.DateTimeFormat('en-US', {
-            weekday: 'short',
-            month: 'short',
-            day: 'numeric',
-            hour: 'numeric',
-            minute: '2-digit',
-            hour12: true
-        }).format(log.createdAt);
-
-        message += `*${index + 1}. [${formattedDate}]*\n> ${log.message}\n\n`;
-    });
-
-    await ctx.reply(message, { parse_mode: "Markdown" });
 }
 
 async function onStats(ctx: BotContext) {
