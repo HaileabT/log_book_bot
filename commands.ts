@@ -5,7 +5,7 @@ async function onLog(ctx: BotContext) {
     const text = ctx.match as string;
 
     if (!text) {
-        await ctx.reply("Please provide a log message. Example: /log I finished my workout!");
+        await ctx.reply("> *Please provide a log message.*\n> Example: `/log I finished my workout!`", { parse_mode: "Markdown" });
         return;
     }
 
@@ -23,12 +23,12 @@ async function onLog(ctx: BotContext) {
     const stats = await processLog(tgUserId, firstName, username, tgGroupId, groupTitle, text);
 
     if (!stats) {
-
-        return await ctx.reply("Couldn't save your log.")
+        return await ctx.reply("> *Couldn't save your log. Please try again.*", { parse_mode: "Markdown" });
     }
 
     await ctx.reply(
-        `Log saved! 📝\nYour current streak is  ${stats.currentStreak} and your longest streak is  ${stats.longestStreak}.`
+        `*Log saved successfully.*\n\n**Current Streak:** ${stats.currentStreak}\n**Longest Streak:** ${stats.longestStreak}`,
+        { parse_mode: "Markdown" }
     );
 }
 
@@ -37,27 +37,27 @@ async function onRecent(ctx: BotContext) {
     const tgGroupId = ctx.chat?.id.toString();
 
     if (!tgUserId || !tgGroupId) {
-        await ctx.reply("Could not identify user or group.");
+        await ctx.reply("> *Could not identify user or group.*", { parse_mode: "Markdown" });
         return;
     }
 
     const logs = await getRecentLogs(tgUserId, tgGroupId, 5);
 
     if (logs.length === 0) {
-        await ctx.reply("You haven't logged any activity in this group yet.");
+        await ctx.reply("> *You haven't logged any activity in this group yet.*", { parse_mode: "Markdown" });
         return;
     }
 
     const displayName = ctx.from?.username ? `@${ctx.from.username}` : ctx.from?.first_name || "User";
 
-    let message = ` **Recent 5 Logs for ${displayName}**\n\n`;
+    let message = `**Recent Logs for ${displayName}**\n\n`;
 
     logs.forEach((log, index) => {
         // Format date simply
         const dateStr = log.createdAt.toISOString().split('T')[0];
         const timeStr = log.createdAt.toTimeString().split(' ')[0];
 
-        message += `**${index + 1}. [${dateStr} ${timeStr}]**\n_${log.message}_\n\n`;
+        message += `*${index + 1}. [${dateStr} ${timeStr}]*\n> ${log.message}\n\n`;
     });
 
     await ctx.reply(message, { parse_mode: "Markdown" });
@@ -68,21 +68,21 @@ async function onStats(ctx: BotContext) {
     const tgGroupId = ctx.chat?.id.toString();
 
     if (!tgUserId || !tgGroupId) {
-        await ctx.reply("Could not identify user or group.");
+        await ctx.reply("> *Could not identify user or group.*", { parse_mode: "Markdown" });
         return;
     }
 
     const stats = await getUserStats(tgUserId, tgGroupId);
 
     if (!stats) {
-        await ctx.reply("You haven't logged any activity in this group yet. Try using /log first!");
+        await ctx.reply("> *You haven't logged any activity in this group yet.*\n> Try using `/log` first!", { parse_mode: "Markdown" });
         return;
     }
 
     const displayName = ctx.from?.username ? `@${ctx.from.username}` : ctx.from?.first_name || "User";
 
     await ctx.reply(
-        ` **Stats for ${displayName}**\n\n Current Streak: ${stats.currentStreak}\n Longest Streak: ${stats.longestStreak}`,
+        `**Stats for ${displayName}**\n\n**Current Streak:** ${stats.currentStreak}\n**Longest Streak:** ${stats.longestStreak}`,
         { parse_mode: "Markdown" }
     );
 }

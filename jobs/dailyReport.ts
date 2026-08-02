@@ -46,10 +46,10 @@ export function startDailyReportJob(bot: Bot<any>) {
         }
 
         for (const [tgGroupId, logs] of Object.entries(logsByGroup)) {
-            let message = "📝 *Daily Logs Summary* \n\n";
+            let message = "**Daily Logs Summary**\n\n";
             for (const log of logs) {
                 const displayName = log.username ? `@${log.username}` : log.firstName;
-                message += `${displayName} (Streak:  ${log.currentStreak}):\n_"${log.message}"_\n\n`;
+                message += `**${displayName}** *(Streak: ${log.currentStreak})*\n> ${log.message}\n\n`;
             }
 
             try {
