@@ -100,7 +100,13 @@ async function onRecent(ctx: BotContext) {
                 const member = await getGroupMember(group.id, user.id);
                 if (member) {
                     tgUserId = user.tg_id;
+                } else {
+                    await ctx.reply("> *Member not found.*", { parse_mode: "Markdown" });
+                    return;
                 }
+            } else {
+                await ctx.reply("> *User or group not found.*", { parse_mode: "Markdown" });
+                return;
             }
         }
 
