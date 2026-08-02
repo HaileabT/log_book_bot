@@ -118,7 +118,7 @@ async function onRecent(ctx: BotContext) {
         }
 
         const displayName = ctx.from?.username ? `@${ctx.from.username}` : ctx.from?.first_name || "User";
-        let message = `**Recent Logs for ${displayName}**\n\n`;
+        let message = `**Recent Logs for ${isUser ? `@${username}` : displayName}**\n\n`;
 
         logs.forEach((log, index) => {
             message += `*${index + 1}. [${formatDate(log.createdAt)}]*\n> ${log.message}\n\n`;
