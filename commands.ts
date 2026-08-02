@@ -61,7 +61,7 @@ async function onRecent(ctx: BotContext) {
             if (parts[1] && !isNaN(Number(parts[1]))) {
                 recentAmount = parseInt(parts[1], 10);
             }
-        } else if (parts[0] && parts[0].startsWith("@")) {
+        } else if (parts[0]?.startsWith("@")) {
             isUser = true;
             username = parts[0].slice(1);
             if (parts[1] && !isNaN(Number(parts[1]))) {
@@ -95,7 +95,8 @@ async function onRecent(ctx: BotContext) {
 
         if (isUser) {
             const group = await getGroup(tgGroupId);
-            const user = await getUserByUsername(username);
+            const user = await getUserByUsername(username.trim());
+            console.log("Asked log for", username)
             if (user && group) {
                 const member = await getGroupMember(group.id, user.id);
                 if (member) {
