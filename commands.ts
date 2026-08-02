@@ -1,5 +1,6 @@
 import { BotContext } from "./type";
-import { getGroup, getGroupMember, getRecentAllLogs, getRecentLogs, getUserByUsername, getUserStats, processLog } from "./db/operations";
+import { getGroup, getGroupMember, getGroupStats, getRecentAllLogs, getRecentLogs, getUserByUsername, getUserStats, processLog } from "./db/operations";
+import { extractAllUserOrDefault } from "./utils";
 
 async function onLog(ctx: BotContext) {
     const text = ctx.match as string;
@@ -48,29 +49,7 @@ async function onRecent(ctx: BotContext) {
         return;
     }
 
-    let recentAmount = 5;
-    let username = "";
-    let isAll = false;
-    let isUser = false;
-    const match = ctx.match as string;
-
-    if (match && match.trim() !== "") {
-        const parts = match.trim().split(/\s+/);
-        if (parts[0]?.toLowerCase() === "all") {
-            isAll = true;
-            if (parts[1] && !isNaN(Number(parts[1]))) {
-                recentAmount = parseInt(parts[1], 10);
-            }
-        } else if (parts[0]?.startsWith("@")) {
-            isUser = true;
-            username = parts[0].slice(1);
-            if (parts[1] && !isNaN(Number(parts[1]))) {
-                recentAmount = parseInt(parts[1], 10);
-            }
-        } else if (!isNaN(Number(parts[0]))) {
-            recentAmount = parseInt(parts[0]!, 10);
-        }
-    }
+    const { recentAmount, username, isAll, isUser } = extractAllUserOrDefault(ctx.match?.toString() || "")
 
     if (isAll) {
         const logs = await getRecentAllLogs(tgGroupId, recentAmount);
@@ -130,7 +109,7 @@ async function onRecent(ctx: BotContext) {
 }
 
 async function onStats(ctx: BotContext) {
-    const tgUserId = ctx.from?.id.toString();
+    let tgUserId = ctx.from?.id.toString();
     const tgGroupId = ctx.chat?.id.toString();
 
     if (!tgUserId || !tgGroupId) {
@@ -138,19 +117,65 @@ async function onStats(ctx: BotContext) {
         return;
     }
 
-    const stats = await getUserStats(tgUserId, tgGroupId);
+    const { username, isAll, isUser } = extractAllUserOrDefault(ctx.match?.toString() || "")
 
-    if (!stats) {
-        await ctx.reply("> *You haven't logged any activity in this group yet.*\n> Try using `/log` first!", { parse_mode: "Markdown" });
-        return;
+    if (isAll) {
+        const stats = await getGroupStats(tgGroupId);
+        if (!stats) {
+            await ctx.reply("> *Nothing has been logged in this group yet.*\n> Try using `/log` first!", { parse_mode: "Markdown" });
+            return;
+        }
+
+
+        const group = await getGroup(tgGroupId);
+        if (!group) {
+            await ctx.reply("> *Nothing has been logged in this group yet.*\n> Try using `/log` first!", { parse_mode: "Markdown" });
+            return;
+        }
+        const displayName = group.title || "Private Group"
+
+
+        await ctx.reply(
+            `**Stats for ${displayName}**\n\n ${stats.map(s => `@${s.member || "Private User"}\n**Current Streak:** ${s.currentStreak}\n**Longest Streak:** ${s.longestStreak}`).join("\n\n")}`,
+            { parse_mode: "Markdown" }
+        );
+    } else {
+
+        if (isUser) {
+            const group = await getGroup(tgGroupId);
+            const user = await getUserByUsername(username.trim());
+            console.log("Asked log for", username)
+            if (user && group) {
+                const member = await getGroupMember(group.id, user.id);
+                if (member) {
+                    tgUserId = user.tg_id;
+                } else {
+                    await ctx.reply("> *Member not found.*", { parse_mode: "Markdown" });
+                    return;
+                }
+            } else {
+                await ctx.reply("> *User or group not found.*", { parse_mode: "Markdown" });
+                return;
+            }
+        }
+
+
+        const stats = await getUserStats(tgUserId, tgGroupId);
+
+        if (!stats) {
+            await ctx.reply("> *You haven't logged any activity in this group yet.*\n> Try using `/log` first!", { parse_mode: "Markdown" });
+            return;
+        }
+
+        const displayName = ctx.from?.username ? `@${ctx.from.username}` : ctx.from?.first_name || "User";
+
+        await ctx.reply(
+            `**Stats for ${isUser ? `@${username}` : displayName}**\n\n**Current Streak:** ${stats.currentStreak}\n**Longest Streak:** ${stats.longestStreak}`,
+            { parse_mode: "Markdown" }
+        );
     }
 
-    const displayName = ctx.from?.username ? `@${ctx.from.username}` : ctx.from?.first_name || "User";
 
-    await ctx.reply(
-        `**Stats for ${displayName}**\n\n**Current Streak:** ${stats.currentStreak}\n**Longest Streak:** ${stats.longestStreak}`,
-        { parse_mode: "Markdown" }
-    );
 }
 
 

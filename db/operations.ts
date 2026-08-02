@@ -133,6 +133,25 @@ export async function getUserStats(tgUserId: string, tgGroupId: string) {
     };
 }
 
+export async function getGroupStats(tgGroupId: string) {
+    const group = await db.select().from(groupsTable).where(eq(groupsTable.tg_id, tgGroupId)).execute().then(res => res[0]);
+    if (!group) return null;
+
+    const member = await db.select().from(groupMembersTable)
+        .where(and(
+            eq(groupMembersTable.groupId, group.id)
+        )).leftJoin(usersTable, eq(groupMembersTable.userId, usersTable.id));
+
+    if (!member || member.length < 1) return null;
+
+    return member.map(m => ({
+        currentStreak: m.group_members.currentStreak,
+        longestStreak: m.group_members.longestStreak,
+        lastLogDate: m.group_members.lastLogDate,
+        member: m.users?.username
+    }))
+}
+
 export async function getRecentLogs(tgUserId: string, tgGroupId: string, limitCount: number = 5) {
     const user = await db.select().from(usersTable).where(eq(usersTable.tg_id, tgUserId)).execute().then(res => res[0]);
     if (!user) return [];
