@@ -55,8 +55,8 @@ async function onRecent(ctx: BotContext) {
     const match = ctx.match as string;
 
     if (match && match.trim() !== "") {
-        const parts = match.trim().toLowerCase().split(/\s+/);
-        if (parts[0] === "all") {
+        const parts = match.trim().split(/\s+/);
+        if (parts[0]?.toLowerCase() === "all") {
             isAll = true;
             if (parts[1] && !isNaN(Number(parts[1]))) {
                 recentAmount = parseInt(parts[1], 10);
