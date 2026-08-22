@@ -1,6 +1,6 @@
 import { eq, and, desc, ilike } from "drizzle-orm";
 import { db } from "./index";
-import { usersTable, groupsTable, groupMembersTable, logsTable } from "./schema";
+import { usersTable, groupsTable, groupMembersTable, logsTable, notebooksTable, notesTable } from "./schema";
 
 
 export async function getGroup(tg_id: string) {
@@ -193,4 +193,159 @@ export async function getRecentAllLogs(tgGroupId: string, limitCount: number = 5
         .limit(limitCount);
 
     return recentLogs;
+}
+
+export async function getOrCreateUser(tgUserId: string, firstName: string, username?: string) {
+    const [user] = await db.insert(usersTable)
+        .values({ tg_id: tgUserId, firstName, username })
+        .onConflictDoUpdate({
+            target: usersTable.tg_id,
+            set: { firstName, username }
+        })
+        .returning();
+    return user;
+}
+
+export async function getOrCreateGroup(tgGroupId: string, title: string) {
+    const [group] = await db.insert(groupsTable)
+        .values({ tg_id: tgGroupId, title })
+        .onConflictDoUpdate({
+            target: groupsTable.tg_id,
+            set: { title }
+        })
+        .returning();
+    return group;
+}
+
+export async function createNotebook(name: string, authorId: number, groupId: number) {
+    const [notebook] = await db.insert(notebooksTable)
+        .values({ name, createdBy: authorId, groupId })
+        .returning();
+
+    if (!notebook) {
+        throw new Error("Error creating the notebook");
+    }
+
+    return notebook;
+}
+
+export async function getNotebook(notebookId: number) {
+    const [notebook] = await db.select().from(notebooksTable)
+        .where(eq(notebooksTable.id, notebookId))
+        .leftJoin(usersTable, eq(notebooksTable.createdBy, usersTable.id))
+        .limit(1);
+
+    if (!notebook) return null;
+    return {
+        ...notebook.notebooks,
+        authorUsername: notebook.users?.username,
+        authorFirstName: notebook.users?.firstName,
+    };
+}
+
+export async function getNotebookByName(groupId: number, name: string) {
+    const [notebook] = await db.select().from(notebooksTable)
+        .where(and(eq(notebooksTable.groupId, groupId), ilike(notebooksTable.name, name.trim())))
+        .leftJoin(usersTable, eq(notebooksTable.createdBy, usersTable.id))
+        .limit(1);
+
+    if (!notebook) return null;
+    return {
+        ...notebook.notebooks,
+        authorUsername: notebook.users?.username,
+        authorFirstName: notebook.users?.firstName,
+    };
+}
+
+export async function getNotebooks(groupId: number) {
+    const notebooks = await db.select().from(notebooksTable)
+        .where(eq(notebooksTable.groupId, groupId))
+        .leftJoin(usersTable, eq(notebooksTable.createdBy, usersTable.id))
+        .orderBy(desc(notebooksTable.createdAt));
+
+    return notebooks.map(nb => ({
+        ...nb.notebooks,
+        authorUsername: nb.users?.username,
+        authorFirstName: nb.users?.firstName,
+    }));
+}
+
+export async function updateNotebook(notebookId: number, newName: string) {
+    const [notebook] = await db.update(notebooksTable)
+        .set({ name: newName.trim() })
+        .where(eq(notebooksTable.id, notebookId))
+        .returning();
+
+    if (!notebook) {
+        throw new Error("Error updating the notebook");
+    }
+
+    return notebook;
+}
+
+export async function deleteNotebook(notebookId: number) {
+    await db.delete(notesTable).where(eq(notesTable.notebookId, notebookId));
+    const [deleted] = await db.delete(notebooksTable)
+        .where(eq(notebooksTable.id, notebookId))
+        .returning();
+    return deleted;
+}
+
+export async function createNote(content: string, authorId: number, notebookId: number) {
+    const [note] = await db.insert(notesTable)
+        .values({ content: content.trim(), authorId, notebookId })
+        .returning();
+
+    if (!note) {
+        throw new Error("Error creating the note");
+    }
+
+    return note;
+}
+
+export async function getNotes(notebookId: number) {
+    const notes = await db.select().from(notesTable)
+        .where(eq(notesTable.notebookId, notebookId))
+        .leftJoin(usersTable, eq(notesTable.authorId, usersTable.id))
+        .orderBy(notesTable.createdAt);
+
+    return notes.map(n => ({
+        ...n.notes,
+        authorUsername: n.users?.username,
+        authorFirstName: n.users?.firstName,
+    }));
+}
+
+export async function getNote(noteId: number) {
+    const [note] = await db.select().from(notesTable)
+        .where(eq(notesTable.id, noteId))
+        .leftJoin(usersTable, eq(notesTable.authorId, usersTable.id))
+        .limit(1);
+
+    if (!note) return null;
+    return {
+        ...note.notes,
+        authorUsername: note.users?.username,
+        authorFirstName: note.users?.firstName,
+    };
+}
+
+export async function updateNote(noteId: number, newContent: string) {
+    const [note] = await db.update(notesTable)
+        .set({ content: newContent.trim() })
+        .where(eq(notesTable.id, noteId))
+        .returning();
+
+    if (!note) {
+        throw new Error("Error updating the note");
+    }
+
+    return note;
+}
+
+export async function deleteNote(noteId: number) {
+    const [deleted] = await db.delete(notesTable)
+        .where(eq(notesTable.id, noteId))
+        .returning();
+    return deleted;
 }
